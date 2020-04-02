@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "Node",
+    "target": "ES5",
+    "removeComments": true,
+    "lib": [
+      "ESNext",
+      "DOM"
+    ]
+  },
+  "include": ["src/**/*.ts"]
+}
