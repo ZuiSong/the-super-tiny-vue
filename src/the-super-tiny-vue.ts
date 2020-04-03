@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-this-alias,@typescript-eslint/no-use-before-define */
 /**
  * the super tiny vue.js.
  * 代码总共200行左右(去掉注释)
@@ -119,22 +118,25 @@ const Directives: { [key: string]: Update | { update: Update } } = {
   /**
    * 对应于 v-text 指令
    */
-  text: function (el, value) {
+  text: function (el: HTMLElement, value: any) {
     el.textContent = value || ''
   },
-  show: function (el, value) {
+  show: function (el: HTMLElement, value: any) {
     el.style.display = value ? '' : 'none'
+  },
+  hidden: function (el: HTMLElement, value: any) {
+    el.style.visibility = !value ? '' : 'hidden'
   },
   /**
    * 对应于 v-model 指令
    */
   model: function (
     el: HTMLInputElement & { handlers?: any },
-    value,
-    dirAgr,
-    dir,
-    vm,
-    key
+    value: any,
+    dirAgr: string,
+    dir: Directive,
+    vm: any,
+    key: string | number | symbol
   ) {
     const eventName = 'keyup'
     el.value = value || ''
@@ -185,57 +187,11 @@ const Directives: { [key: string]: Update | { update: Update } } = {
   },
 }
 
-/**
- * MiniVue
- */
-function TinyVue(opts) {
-  /**
-   * root/this.$el: 根节点
-   * els: 指令节点
-   * bindings: 指令与data关联的桥梁
-   */
-  const self: Vm = this
-  // eslint-disable-next-line no-undef
-  const root: HTMLElement = document.getElementById(opts.el)
-  this.$el = root
-  const els: NodeListOf<Element> = root.querySelectorAll(
-    getDirSelectors(Directives)
-  )
-  this.$els = els
-  const bindings = {}
-  this._bindings = bindings
-
-  els.forEach((el) => processNode(el as HTMLElement))
-  processNode(root)
-
-  /**
-   * vm响应式数据初始化
-   */
-
-  const _data = extend(self, opts.data, opts.methods)
-  for (const key in bindings) {
-    // eslint-disable-next-line no-prototype-builtins
-    if (bindings.hasOwnProperty(key)) {
-      self[key] = _data[key]
-    }
-  }
-
-  function processNode(el: HTMLElement) {
-    getAttributes(el.attributes).forEach((attr) => {
-      const directive: Directive = parseDirective(attr)
-      if (directive) {
-        bindDirective(self, el, bindings, directive)
-      }
-    })
-  }
-
-  /**
-   * ready
-   */
-  if (typeof opts?.ready == 'function') {
-    this.ready = opts.ready
-    this.ready()
-  }
+interface TinyVueOption {
+  ready?: Function
+  methods: object
+  data: object
+  el: string
 }
 
 /**************************************************************
@@ -269,7 +225,7 @@ function getAttributes(attributes: NamedNodeMap): AttrObj[] {
 /**
  * 返回指令选择器，便于指令节点的查找
  */
-function getDirSelectors(directives) {
+function getDirSelectors(directives): string {
   /**
    * 支持的事件指令
    */
@@ -292,6 +248,30 @@ function getDirSelectors(directives) {
 type Binding = {
   value: string
   directives: Directive[]
+}
+
+/**
+ * get/set 绑定指令更新操作
+ */
+function bindAccessors(vm, key: PropertyKey, binding: Binding) {
+  Object.defineProperty(vm, key, {
+    get: function () {
+      return binding.value
+    },
+    set: function (value) {
+      binding.value = value
+      binding.directives.forEach((directive) => {
+        directive.update(
+          directive.el,
+          value,
+          directive.argument,
+          directive,
+          vm,
+          key
+        )
+      })
+    },
+  })
 }
 
 /**
@@ -330,7 +310,7 @@ function bindDirective(
     binding = {
       value: '',
       directives: [],
-    }
+    } as Binding
   }
   directive.el = el
   binding.directives.push(directive)
@@ -344,30 +324,6 @@ function bindDirective(
     bindAccessors(vm, key, binding)
   }
   bindings[key] = binding
-}
-
-/**
- * get/set 绑定指令更新操作
- */
-function bindAccessors(vm, key: PropertyKey, binding: Binding) {
-  Object.defineProperty(vm, key, {
-    get: function () {
-      return binding.value
-    },
-    set: function (value) {
-      binding.value = value
-      binding.directives.forEach((directive) => {
-        directive.update(
-          directive.el,
-          value,
-          directive.argument,
-          directive,
-          vm,
-          key
-        )
-      })
-    },
-  })
 }
 
 type Update = (
@@ -430,21 +386,59 @@ function parseDirective(attr: AttrObj): Directive {
   } as Directive
 }
 
-type Vm = any
+type Vm = TinyVue
 
 /**
- * 对象合并
+ * MiniVue
  */
-function extend(vm: Vm, data: object, method: object): object {
-  method = method || {}
-  data = data || {}
 
-  for (const key in method) {
-    // eslint-disable-next-line no-prototype-builtins
-    if (method.hasOwnProperty(key)) {
-      data[key] = method[key].bind(vm)
+class TinyVue {
+  private readonly $el: HTMLElement
+  private readonly $els: NodeListOf<Element>
+  private readonly _bindings: {}
+  private readonly ready: Function
+
+  constructor(opts: TinyVueOption) {
+    // eslint-disable-next-line no-undef
+    this.$el = document.getElementById(opts.el)
+    // 获得指令选择器
+    const directiveSelectors = getDirSelectors(Directives)
+    this.$els = this.$el.querySelectorAll(directiveSelectors)
+    this._bindings = {}
+    this.$els.forEach((el) => this.processNode(el as HTMLElement))
+    this.processNode(this.$el)
+
+    /**
+     * vm响应式数据初始化
+     */
+    for (const key in this._bindings) {
+      const data = opts.data || {}
+      // eslint-disable-next-line no-prototype-builtins
+      if (data.hasOwnProperty(key)) {
+        this[key] = data[key]
+      }
+      const methods = opts.methods || {}
+      // eslint-disable-next-line no-prototype-builtins
+      if (methods.hasOwnProperty(key)) {
+        this[key] = methods[key].bind(this)
+      }
+    }
+
+    /**
+     * ready
+     */
+    if (typeof opts?.ready == 'function') {
+      this.ready = opts.ready
+      this.ready()
     }
   }
 
-  return data
+  private processNode(el: HTMLElement): void {
+    getAttributes(el.attributes).forEach((attr) => {
+      const directive: Directive = parseDirective(attr)
+      if (directive) {
+        bindDirective(this, el, this._bindings, directive)
+      }
+    })
+  }
 }
