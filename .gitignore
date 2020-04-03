@@ -1,4 +1,5 @@
 /node_modules
 .idea/
-src/the-super-tiny-vue.js
+dist/
+.cache/
 yarn.lock

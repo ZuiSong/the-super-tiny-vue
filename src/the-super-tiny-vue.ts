@@ -187,7 +187,7 @@ const Directives: { [key: string]: Update | { update: Update } } = {
   },
 }
 
-interface TinyVueOption {
+export interface TinyVueOption {
   ready?: Function
   methods: object
   data: object
@@ -204,7 +204,7 @@ interface TinyVueOption {
  * 'v-text'='counter' => {name: v-text, value: 'counter'}
  */
 
-type AttrObj = {
+export type AttrObj = {
   name: string
   value: string
 }
@@ -225,7 +225,7 @@ function getAttributes(attributes: NamedNodeMap): AttrObj[] {
 /**
  * 返回指令选择器，便于指令节点的查找
  */
-function getDirSelectors(directives): string {
+function getDirSelectors(directives: object): string {
   /**
    * 支持的事件指令
    */
@@ -245,7 +245,7 @@ function getDirSelectors(directives): string {
   )
 }
 
-type Binding = {
+export type Binding = {
   value: string
   directives: Directive[]
 }
@@ -326,7 +326,7 @@ function bindDirective(
   bindings[key] = binding
 }
 
-type Update = (
+export type Update = (
   el: HTMLElement,
   val: any,
   argument: string,
@@ -335,7 +335,7 @@ type Update = (
   key: PropertyKey
 ) => void
 
-type Directive = {
+export type Directive = {
   el?: HTMLElement
   argument: string
   update: Update
@@ -386,13 +386,13 @@ function parseDirective(attr: AttrObj): Directive {
   } as Directive
 }
 
-type Vm = TinyVue
+export type Vm = TinyVue
 
 /**
  * MiniVue
  */
 
-class TinyVue {
+export class TinyVue {
   private readonly $el: HTMLElement
   private readonly $els: NodeListOf<Element>
   private readonly _bindings: {}
@@ -442,3 +442,7 @@ class TinyVue {
     })
   }
 }
+
+// @ts-ignore
+// eslint-disable-next-line no-undef
+window.TinyVue = TinyVue

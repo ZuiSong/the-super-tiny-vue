@@ -25,9 +25,9 @@
         <p v-text='counter'></p>
         <h2 v-text='hello' v-show='isShow'></h2>
     </div>
-    <script src='./the-super-tiny-vue.js'></script>
+    <script src='./src/the-super-tiny-vue.ts'></script>
     <script>
-        new TinyVue({
+        const vm = new TinyVue({
             el: 'app',
             data: {
                 counter: 1,
@@ -40,7 +40,7 @@
                     this.isShow = !this.isShow;
                 }
             },
-            ready () {
+            ready() {
                 let self = this;
                 self.hello = 'Ready, go!';
                 setTimeout(function () {
@@ -50,7 +50,7 @@
         })
 
         console.log('vm: ', vm);
-        console.log('bindings: ', vm._bindings);
+        console.log('bindings: ', vm?.bindings);
     </script>
 </body>
 </html>

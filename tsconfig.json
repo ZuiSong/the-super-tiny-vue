@@ -3,6 +3,8 @@
     "moduleResolution": "Node",
     "target": "ES5",
     "removeComments": true,
+    "declaration": true,
+    "module": "CommonJS",
     "lib": [
       "ESNext",
       "DOM"
